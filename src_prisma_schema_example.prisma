@@ -1,0 +1,592 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Logs {
+  id       Int      @id @default(autoincrement())
+  action   String   @db.Text
+  data     String   @db.LongText
+  dateTime String   @db.VarChar(20)
+  username String   @unique @db.VarChar(255)
+  Accounts Accounts @relation(fields: [username], references: [username], onDelete: Cascade)
+}
+
+model Addresses {
+  id                    Int            @id @default(autoincrement())
+  type                  AddressTypes
+  class                 String?
+  RorClassTypes         RorClassTypes? @relation(fields: [class], references: [type])
+  mobile                String?        @db.VarChar(15)
+  email                 String?
+  addressLine1          String?        @db.Text
+  addressLine2          String?        @db.Text
+  pincode               Int?
+  PostalIndexNumberCode Districts?     @relation(fields: [pincode], references: [pincode])
+  latitude              Float?
+  longitude             Float?
+  state                 String?
+  States                States?        @relation(fields: [state], references: [name])
+  country               String?
+  Countries             Countries?     @relation(fields: [country], references: [name])
+  accounts              String?        @db.VarChar(255)
+  Accounts              Accounts?      @relation(fields: [accounts], references: [username])
+}
+
+model Accounts {
+  username         String             @id @unique @db.VarChar(255)
+  password         String?            @db.Text
+  isActive         Boolean            @default(false)
+  schemePhase      Int                @default(2) @db.TinyInt()
+  name             String?            @db.Text
+  photo            String?
+  AdminUsers       AdminUsers?
+  Users            Users?
+  Logs             Logs?
+  Institutes       Institutes?
+  Addresses        Addresses[]
+  socialMediaLinks SocialMediaLinks[]
+  Files            Files[]
+  ProfileImage     Files?             @relation(name: "ProfileImage", fields: [photo], references: [uri])
+}
+
+model AdminRoles {
+  role           String       @id @unique
+  hierarchyLevel Int          @unique @db.TinyInt
+  permissions    Json?
+  AdminUsers     AdminUsers[]
+}
+
+model AdminUsers {
+  id                    Int                     @id @default(autoincrement())
+  username              String                  @unique @db.VarChar(255)
+  Accounts              Accounts                @relation(fields: [username], references: [username], onDelete: Cascade)
+  role                  String
+  AdminRoles            AdminRoles              @relation(fields: [role], references: [role])
+  AdminsAndUsersDetails AdminsAndUsersDetails[]
+  CreatedInstitutes     Institutes[]            @relation(name: "CreatorAdmin")
+  InstitutesUnder       Institutes[]
+}
+
+model Institutes {
+  id                  Int                  @id @default(autoincrement())
+  auditTrailStatuses  String               @db.Text
+  auditTrailComments  String               @db.Text
+  ugcRecognized       Boolean?
+  hostelAvailable     Boolean?
+  creator             String
+  Creator             AdminUsers?          @relation(name: "CreatorAdmin", fields: [creator], references: [username])
+  username            String               @unique @db.VarChar(255)
+  Accounts            Accounts             @relation(fields: [username], references: [username], onDelete: Cascade)
+  category            String?
+  InstituteCategories InstituteCategories? @relation(fields: [category], references: [type])
+  headId              Int?                 @unique
+  Head                Users?               @relation(name: "Head", fields: [headId], references: [id])
+  nodalId             Int?                 @unique
+  Nodal               Users?               @relation(name: "Nodal", fields: [nodalId], references: [id])
+  Users               Users[]              @relation("User")
+  AdminUsers          AdminUsers[]
+  Departments         Departments[]
+}
+
+model Roles {
+  id             Int     @id @default(autoincrement())
+  role           String  @unique
+  hierarchyLevel Int     @unique @db.TinyInt
+  permissions    Json?
+  auditTrail     String  @db.Text
+  validStatuses  String  @db.Text
+  user           Users[]
+}
+
+model Users {
+  id                    Int                    @id @default(autoincrement())
+  uniqueAwardeeNumber   String?                @unique
+  auditTrailStatuses    String                 @db.Text
+  auditTrailComments    String                 @db.Text
+  fellowshipStartOn     String?                @db.VarChar(20)
+  approverParentUserId  Int?
+  Approver              Users?                 @relation("Approver", fields: [approverParentUserId], references: [id])
+  username              String                 @unique @db.VarChar(255)
+  Accounts              Accounts               @relation(fields: [username], references: [username], onDelete: Cascade)
+  gender                String?
+  Genders               Genders?               @relation(fields: [gender], references: [type])
+  nationality           String?
+  Countries             Countries?             @relation(fields: [nationality], references: [nationality])
+  category              String?
+  ReservationCategories ReservationCategories? @relation(fields: [category], references: [type])
+  AdminsAndUsersDetails AdminsAndUsersDetails?
+  role                  String
+  Roles                 Roles                  @relation(fields: [role], references: [role])
+  instituteId           Int
+  Institute             Institutes             @relation(name: "User", fields: [instituteId], references: [id], onDelete: Cascade)
+  departmentId          Int?
+  Departments           Departments?           @relation(fields: [departmentId], references: [id])
+  InstituteHead         Institutes?            @relation("Head")
+  InstituteNodal        Institutes?            @relation("Nodal")
+  parentId              Int?
+  parent                Users?                 @relation("ChildUsers", fields: [parentId], references: [id])
+  children              Users[]                @relation("ChildUsers")
+  approverParentUser    Users[]                @relation("Approver")
+  CandidateDetails      CandidateDetails[]     @relation("CandidateDetails")
+  ReplacedBy            CandidateDetails[]     @relation("ReplacedBy")
+  SubstituteOf          CandidateDetails[]     @relation("SubstituteOf")
+  Guide                 CandidateDetails[]     @relation("Guide")
+  CoGuide               CandidateDetails[]     @relation("CoGuide")
+  Qualifications        Qualifications[]
+  JobExperiences        JobExperiences[]
+  Startups              Startups[]
+  TechProducts          TechProducts[]
+  Patents               Patents[]
+  ResearchPapers        ResearchPapers[]
+}
+
+model Qualifications {
+  id              Int     @id @default(autoincrement())
+  level           String?
+  institutionName String?
+  degreeName      String?
+  subjects        String?
+  passingYear     Int?
+  marks           String?
+  division        String?
+  userId          Int
+  Users           Users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model JobExperiences {
+  id               Int     @id @default(autoincrement())
+  organizationName String?
+  designation      String?
+  profile          String?
+  from             String?
+  to               String?
+  userId           Int
+  Users            Users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Startups {
+  id          Int     @id @default(autoincrement())
+  name        String?
+  description String?
+  status      String?
+  userId      Int
+  Users       Users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TechProducts {
+  id          Int     @id @default(autoincrement())
+  description String?
+  status      String?
+  userId      Int
+  Users       Users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Files       Files[] @relation("TechProductsFiles")
+}
+
+model Patents {
+  id                   Int                @id @default(autoincrement())
+  title                String?            @db.Text
+  abstract             String?            @db.Text
+  publicationNumber    String?
+  url                  String?
+  inventors            String?            @db.Text
+  applicationFiledDate String?            @db.VarChar(20)
+  publicationDate      String?            @db.VarChar(20)
+  grantedDate          String?            @db.VarChar(20)
+  submissionDate       String?            @db.VarChar(20)
+  description          String?
+  status               String?
+  PatentStatusTypes    PatentStatusTypes? @relation(fields: [status], references: [type])
+  fieldOfInvention     String?
+  ThrustAreas          ThrustAreas?       @relation(fields: [fieldOfInvention], references: [name])
+  userId               Int
+  Users                Users              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Files                Files[]            @relation("PatentFiles")
+}
+
+model ResearchPapers {
+  id                         Int                     @id @default(autoincrement())
+  topic                      String
+  abstract                   String?                 @db.Text
+  identifier                 String?                 @db.Text
+  keywords                   String?                 @db.Text
+  url                        String?                 @db.Text
+  submissionDate             String?                 @db.VarChar(20)
+  digitalObjectIdentifier    String?                 @db.Text
+  publisherName              String?                 @db.Text
+  publishedIn                String?                 @db.Text
+  publishedDate              String?                 @db.VarChar(20)
+  publisherSeries            String?                 @db.Text
+  publisherVolume            String?                 @db.Text
+  publisherIssue             String?                 @db.Text
+  conferenceJournalName      String?                 @db.Text
+  conferenceJournalType      String?                 @db.Text
+  conferenceJournalAcronym   String?                 @db.Text
+  conferenceJournalLocation  String?                 @db.Text
+  conferenceJournalDate      String?                 @db.VarChar(20)
+  researchArea               String
+  ResearchAreas              ResearchAreas           @relation(fields: [researchArea], references: [name])
+  thrustArea                 String
+  ThrustAreas                ThrustAreas             @relation(fields: [thrustArea], references: [name])
+  researchPaperPublisherName String
+  ResearchPaperPublishers    ResearchPaperPublishers @relation(fields: [researchPaperPublisherName], references: [name])
+  authors                    ResearchPapersAuthors[]
+  Users                      Users?                  @relation(fields: [usersId], references: [id])
+  usersId                    Int?
+  Files                      Files[]                 @relation("ResearchPapersFiles")
+}
+
+model AdminsAndUsersDetails {
+  id             Int         @id
+  AdminUsers     AdminUsers? @relation(fields: [id], references: [id], onDelete: Cascade, map: "AdminUsers")
+  Users          Users       @relation(fields: [id], references: [id], onDelete: Cascade, map: "Users")
+  settings       Json
+  designation    String?
+  pwd            Boolean?
+  dob            String?     @db.VarChar(20)
+  schemeJoinedOn String?     @db.VarChar(20)
+}
+
+model CandidateDetails {
+  id                     Int              @id
+  CandidateDetails       Users            @relation(name: "CandidateDetails", fields: [id], references: [id], onDelete: Cascade)
+  guardianName           String?          @db.Text
+  phdCompletion          String?          @db.VarChar(20)
+  inHostel               Boolean?
+  inHostelSince          String?          @db.VarChar(20)
+  otherScholarshipSource String?
+  rollNo                 String?
+  sponsored              Boolean?
+  dateOfLeaving          String?          @db.VarChar(20)
+  reasonOfLeaving        String?
+  completionDate         String?          @db.VarChar(20)
+  conversionDate         String?          @db.VarChar(20)
+  reasonOfConversion     String?
+  thesisDoc              String?
+  ThesisDoc              Files?           @relation(name: "ThesisDoc", fields: [thesisDoc], references: [uri])
+  relivingLetterDoc      String?
+  RelivingLetterDoc      Files?           @relation(name: "RelivingLetterDoc", fields: [relivingLetterDoc], references: [uri])
+  degreeCertificateDoc   String?
+  DegreeCertificateDoc   Files?           @relation(name: "DegreeCertificateDoc", fields: [degreeCertificateDoc], references: [uri])
+  enrollmentType         String?
+  EnrollmentTypes        EnrollmentTypes? @relation(fields: [enrollmentType], references: [type])
+  guardianType           String?
+  GuardianTypes          GuardianTypes?   @relation(fields: [guardianType], references: [type])
+  replacedBy             Int?
+  ReplacedBy             Users?           @relation(name: "ReplacedBy", fields: [replacedBy], references: [id])
+  substituteOf           Int?
+  SubstituteOf           Users?           @relation(name: "SubstituteOf", fields: [substituteOf], references: [id])
+  guide                  Int?
+  Guide                  Users?           @relation(name: "Guide", fields: [guide], references: [id])
+  coGuide                Int?
+  CoGuide                Users?           @relation(name: "CoGuide", fields: [coGuide], references: [id])
+  aadhaarDoc             String?
+  AadhaarDoc             Files?           @relation(name: "AadhaarDoc", fields: [aadhaarDoc], references: [uri])
+  bankDoc                String?
+  BankDoc                Files?           @relation(name: "BankDoc", fields: [bankDoc], references: [uri])
+  phdStatusesType        String?
+  PhDStatuses            PhDStatuses?     @relation(fields: [phdStatusesType], references: [type])
+  // batch                  String?
+  // Batches                Batches?         @relation(fields: [batch], references: [name])
+}
+
+// model PhDCompletions {
+//    id                 Int    @id @default(autoincrement())
+//    Users              Users  @relation(fields: [id], references: [id], onDelete: Cascade)
+//    auditTrailStatuses String @db.Text
+//    auditTrailComments String @db.Text
+// }
+
+model ModulesAuditTrails {
+  id            Int    @id @default(autoincrement())
+  moduleName    String @unique
+  auditTrail    String @db.Text
+  validStatuses String @db.Text
+}
+
+model Files {
+  id                   Int                @id @default(autoincrement())
+  uri                  String             @unique
+  displayName          String
+  owner                String             @db.VarChar(255)
+  Accounts             Accounts           @relation(fields: [owner], references: [username])
+  fileType             String
+  FileTypes            FileTypes          @relation(fields: [fileType], references: [type])
+  AadhaarDoc           CandidateDetails[] @relation("AadhaarDoc")
+  BankDoc              CandidateDetails[] @relation("BankDoc")
+  SocialMediaLinks     SocialMediaLinks[] @relation("SocialMediaLinks")
+  ThesisDoc            CandidateDetails[] @relation("ThesisDoc")
+  RelivingLetterDoc    CandidateDetails[] @relation("RelivingLetterDoc")
+  DegreeCertificateDoc CandidateDetails[] @relation("DegreeCertificateDoc")
+  techProducts         Int?
+  TechProductsFiles    TechProducts?      @relation(name: "TechProductsFiles", fields: [techProducts], references: [id])
+  patents              Int?
+  PatentFiles          Patents?           @relation(name: "PatentFiles", fields: [patents], references: [id])
+  researchPapers       Int?
+  ResearchPapersFiles  ResearchPapers?    @relation(name: "ResearchPapersFiles", fields: [researchPapers], references: [id])
+  ProfileImage         Accounts[]         @relation("ProfileImage")
+}
+
+model Departments {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.Text
+  instituteId Int
+  Institutes  Institutes @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  users       Users[]
+}
+
+model Countries {
+  name        String      @id @unique
+  nationality String      @unique
+  // Nationalities Nationalities?
+  States      States[]
+  Addresses   Addresses[]
+  Users       Users[]
+}
+
+model States {
+  name      String      @id @unique
+  country   String
+  Countries Countries?  @relation(fields: [country], references: [name])
+  Districts Districts[]
+  Addresses Addresses[]
+}
+
+model Districts {
+  pincode   Int         @id @unique
+  name      String
+  // pincodes PostalIndexNumberCodes[]
+  state     String
+  States    States?     @relation(fields: [state], references: [name])
+  // PostalIndexNumberCodes PostalIndexNumberCodes[]
+  Addresses Addresses[]
+}
+
+// model PostalIndexNumberCodes {
+//    id           Int         @id @default(autoincrement())
+//    number       Int         @db.MediumInt
+//    districtName String?
+//    Districts    Districts?  @relation(fields: [districtName], references: [name])
+//    Addresses    Addresses[]
+// }
+
+// model Nationalities {
+//    name                  String                  @id @unique
+//    Countries             Countries               @relation(fields: [name], references: [nationality])
+//    AdminsAndUsersDetails AdminsAndUsersDetails[]
+// }
+
+model SocialMediaLinks {
+  id              Int       @id @default(autoincrement())
+  platformName    String
+  url             String
+  icon            String
+  Files           Files?    @relation(name: "SocialMediaLinks", fields: [icon], references: [uri])
+  accountUsername String?   @db.VarChar(255)
+  Accounts        Accounts? @relation(fields: [accountUsername], references: [username])
+}
+
+model ReservationCategories {
+  type  String  @id @unique
+  Users Users[]
+}
+
+model Genders {
+  type  String  @id @unique
+  Users Users[]
+}
+
+model InstituteCategories {
+  type       String       @id @unique
+  Institutes Institutes[]
+}
+
+model RorClassTypes {
+  type      String      @id @unique
+  Addresses Addresses[]
+}
+
+model FileTypes {
+  type  String  @id @unique
+  Files Files[]
+}
+
+model PhDStatuses {
+  type             String             @id @unique
+  CandidateDetails CandidateDetails[]
+}
+
+model EnrollmentTypes {
+  type             String             @id @unique
+  CandidateDetails CandidateDetails[]
+}
+
+model GuardianTypes {
+  type             String             @id @unique
+  CandidateDetails CandidateDetails[]
+}
+
+model PatentStatusTypes {
+  type    String    @id @unique
+  Patents Patents[]
+}
+
+model ResearchPapersAuthors {
+  name             String         @id @unique
+  researchPapersId Int
+  ResearchPapers   ResearchPapers @relation(fields: [researchPapersId], references: [id])
+}
+
+model ResearchAreas {
+  name           String           @id @unique
+  ResearchPapers ResearchPapers[]
+}
+
+model ThrustAreas {
+  name           String           @id @unique
+  ResearchPapers ResearchPapers[]
+  Patents        Patents[]
+}
+
+model ResearchPaperPublishers {
+  name           String           @id @unique
+  ResearchPapers ResearchPapers[]
+}
+
+model UIAdminOnboarding {
+  id         Int                     @id @default(autoincrement())
+  data       Json
+  status     UIAdminOnBoardingStatus @default(PENDING)
+  created_at DateTime                @default(now())
+  mobile     String                  @unique @db.VarChar(255)
+}
+
+model UIInstituteOnBoarding {
+  id         Int                         @id @default(autoincrement())
+  data       Json
+  status     UIInstituteOnBoardingStatus
+  created_at DateTime                    @default(now())
+}
+
+model UIInstituteRequest {
+  id         Int                      @id @default(autoincrement())
+  data       Json
+  status     UIInstituteRequestStatus
+  created_at DateTime                 @default(now())
+}
+
+enum AddressTypes {
+  CONTACT
+  OFFICE // login not available
+  PERMANENT // login not available
+}
+
+enum UIAdminOnBoardingStatus {
+  PENDING
+  APPROVED
+  SENTBACK
+  SUBMITTED
+  REJECT
+}
+
+enum UIInstituteOnBoardingStatus {
+  PENDING
+  APPROVED
+  SENTBACK
+  SUBMITTED
+  REJECT
+}
+
+enum UIInstituteRequestStatus {
+  PENDING
+  APPROVED
+  SENTBACK
+  SUBMITTED
+  REJECT
+}
+
+
+// 1. Details of Institution (done)
+// City             
+// PhD produced under ESDM/IT-ITES during the last three years   
+// Recognized by AICTE   
+// Validity of AICTE recognition   
+// Certificate for AICTE recognition   
+// Recognition by NBA  
+// Validity of NBA accreditation   
+// Recogntion by NAAC   
+// Validity of NAAC accreditation    
+// Certificate for NAAC accreditation
+
+
+// 3. Contact Details (Nodal Officer)   (Done)
+// Uploaded Scanned Copy of Declaration by Head of the Institution
+
+
+// 4. Detailsof Faculty Members   (Done)
+// Regular Candidates Under His/Her Supervision 
+
+
+// 5. Intake of PhD Candidates   (Done)
+// Year  
+// Number of Full Time PhD Candidates Enrolled
+// Number of Part Time PhD Candidates Enrolled
+
+
+// 6. Research Achievements & Certifications   (Done)
+//   Latest NIRF Rankings   
+// NIRF Ranking (Overall)
+// NIRF Ranking (Research)
+// NIRF Ranking (Engineering)
+// NIRF Ranking (University) 
+
+// a) Details of Faculty Members Working  (Done)
+// Working in   
+// Emerging Areas  
+// Specify Other Emerging Areas
+
+
+// Patents Granted and Commercially Exploited/License   (Done)
+// Awardedand Technology Transferred  
+// Awarded   
+// Filed and Registered  
+// Invention Disclosure Filed  
+// Other Details
+
+
+// Applied Research Carried Out   (Done)
+// Prototype/Product Developed   
+
+// Publication (Journal Publications)   (Done)
+// SCI   
+// E-SCI/SCI-E  Scopus  
+// UGC Approved (Non Paid journal)
+
+
+ 
+// Conference/Seminar Publications (Done)
+// International Professional Society Conducted like IEEE/ASME/ACE etc. Paper(s) Presented and Published in Proceeding (IeeeOrAsmeOrAcePresentedAndPublished)
+// International Professional Society Conducted like IEEE/ASME/ACE etc. Paper(s) Presented but not Published in Proceeding (IeeeOrAsmeOrAcePresentedButNotPublished)
+// International/National Elsevieror Springer sponored confrence/Seminar supported by National/Regional professionl body. Paper(s) presented and published in proceeding
+// (InternationalOrNationalElsevierorSpringerPresentedAndPublished)
+// Others Including Conference/Seminal. Paper(s) Presented and Published in Proceeding (OthersConferenceOrSeminalPresentedAndPublished)
+
+
+// 7. Candidates Enrolled under Phase-I   (Done)
+// Date of Enrollment
+
+// Number of Full Time PhD candidates enrolles under Phase-I of Visvesvaraya PhD Scheme & Currently Puruing PhD  (Done) 
+// Other Remarks
+
+
+
+// 4. Mentor Details    (Done)
+// Mentor's CV   
+// Mentor's affiliation
+
+
+
