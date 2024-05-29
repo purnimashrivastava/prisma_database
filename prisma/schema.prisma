@@ -156,7 +156,8 @@ model CandidateDetails {
 }
 
 model Countries {
-  name        String      @id @unique
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
   nationality String      @unique
   Addresses   Addresses[]
   States      States[]
@@ -476,7 +477,7 @@ model States {
   country   String
   Addresses Addresses[]
   Districts Districts[]
-  City      String
+  // City      String?
   Countries Countries   @relation(fields: [country], references: [name])
 
   @@index([country], map: "States_country_fkey")

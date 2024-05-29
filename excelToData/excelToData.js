@@ -10,6 +10,7 @@ const excelFilePath = path.join(__dirname, '..', 'excelToData', 'data.xlsx');
 workbook.xlsx.readFile(excelFilePath)
     .then(() => {
         const dataContentArray = [];
+        const exportStatements = {}; // Object to store export statements for each sheet
 
         // Iterate over all sheets in the workbook
         workbook.eachSheet((worksheet, sheetId) => {
@@ -36,13 +37,22 @@ workbook.xlsx.readFile(excelFilePath)
 
             // Push data content for the current sheet to the array
             dataContentArray.push(`const ${sheetName} = ${JSON.stringify(data, null, 2)};\n`);
+            exportStatements[sheetName] = sheetName; // Store sheet name for export
+
         });
 
+        // Construct export object dynamically
+        let exportObject = 'module.exports = {\n';
+        for (const sheetName in exportStatements) {
+            exportObject += `    ${sheetName},\n`;
+        }
+        exportObject += '};\n';
+
         // Write data to data.js file with content from all sheets in the prisma folder
-        const dataContent = dataContentArray.join('\n');
+        const dataContent = dataContentArray.join('\n') + exportObject;
         const prismaFolderPath = path.join('D:', 'phd-scheme', 'prisma');
-        const dataFilePath = path.join(prismaFolderPath, 'data1.js');
-        
+        const dataFilePath = path.join(prismaFolderPath, 'data.js');
+
         // Create prisma folder if it doesn't exist
         if (!fs.existsSync(prismaFolderPath)) {
             fs.mkdirSync(prismaFolderPath);
